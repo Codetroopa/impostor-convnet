@@ -1,0 +1,4 @@
+# Ignore temporary model files / training set data
+model/*
+*.pkl
+*.h5
