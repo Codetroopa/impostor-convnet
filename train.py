@@ -46,30 +46,16 @@ if __name__ == "__main__":
     model.add(Dense(9, activation='softmax'))
 
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    # model.fit(X_train, y_train, batch_size=32, nb_epoch=10, verbose=True)
+    model.fit(X_train, y_train, batch_size=32, nb_epoch=10, verbose=True)
 
     score = model.evaluate(X_test, y_test, verbose=1)
     print('Loss: {}'.format(score[0]))
     print('Accuracy: {}'.format(score[1]))
 
-    # store model as Tensorflow Session
+    # store model as Tensorflow Session locally
     sess = K.get_session()
     saver = tf.train.Saver()
     fname = '{}/model/test_tf_model'.format(prefix_to_file(__file__))
     saver.save(sess, fname)
 
-    # Save Graph only (to be frozen)
-    tf.train.write_graph(sess.graph_def, '{}/model'.format(prefix_to_file(__file__)), "graph.pbtxt", as_text=True)
-
-    # # store model on S3 for later use
-    # client = boto3.client('s3')
-    # fname = '{}/model.h5'.format(prefix_to_file(__file__))
-    # model.save(fname)
-
-    # with open(fname, 'rb') as f:
-    #     client.put_object(
-    #         Bucket=BUCKET_NAME,
-    #         Key='models/model_{}.h5'.format(datetime.now().strftime('%Y%m%d-%H%M')),
-    #         Body=f
-    #     )
-    # print('Successfully stored model on S3')
+    print('DON\'T FORGET TO RUN: python export_model.py --model_dir="model" --output_node_names="dense_2/Softmax"')
