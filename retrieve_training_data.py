@@ -2,9 +2,10 @@ import numpy as np
 import csv
 import boto3
 import json
-import os
 import pickle
 from datetime import datetime
+from helpers import prefix_to_file
+
 
 BUCKET_NAME = 'codetroopa-impostor'
 TSET_PREFIX = 'unprocessed_training_data/'
@@ -53,32 +54,32 @@ def get_matrices_from_s3():
         response = client.get_object(Bucket=BUCKET_NAME, Key=folder_prefix + META_KEY)
         meta_data = json.loads(response['Body'].read().decode('utf-8'))
         m_count = meta_data['matrix_count']
-        m_length = meta_data['matrix_length']
-        m_width = meta_data['matrix_width']
+        m_columns = meta_data['matrix_length']
+        m_rows = meta_data['matrix_width']
         y_length = meta_data['ylabel_length']
 
         # init matrices TODO: somehow refactor this out
         if player_matrices is None:
-            player_matrices = np.ndarray((0, m_length, m_width))
+            player_matrices = np.ndarray((0, m_columns, m_rows))
         if obstacle_matrices is None:
-            obstacle_matrices = np.ndarray((0, m_length, m_width))
+            obstacle_matrices = np.ndarray((0, m_columns, m_rows))
         if enemy_matrices is None:
-            enemy_matrices = np.ndarray((0, m_length, m_width))
+            enemy_matrices = np.ndarray((0, m_columns, m_rows))
         if y_labels is None:
             y_labels = np.ndarray((0, y_length))
 
         # Now we go through each type of matrix, reshaping into an appropriate format
         response = client.get_object(Bucket=BUCKET_NAME, Key=folder_prefix + PLAYER_KEY)
         player_matrix = np.fromstring(response['Body'].read().decode('utf-8'), sep='\n', dtype=int)
-        player_matrices = np.concatenate((player_matrices, player_matrix.reshape((m_count, m_length, m_width))))
+        player_matrices = np.concatenate((player_matrices, player_matrix.reshape((m_count, m_columns, m_rows))))
 
         response = client.get_object(Bucket=BUCKET_NAME, Key=folder_prefix + OBSTACLE_KEY)
         obstacle_matrix = np.fromstring(response['Body'].read().decode('utf-8'), sep='\n', dtype=int)
-        obstacle_matrices = np.concatenate((obstacle_matrices, obstacle_matrix.reshape((m_count, m_length, m_width))))
+        obstacle_matrices = np.concatenate((obstacle_matrices, obstacle_matrix.reshape((m_count, m_columns, m_rows))))
 
         response = client.get_object(Bucket=BUCKET_NAME, Key=folder_prefix + ENEMY_KEY)
         enemy_matrix = np.fromstring(response['Body'].read().decode('utf-8'), sep='\n', dtype=int)
-        enemy_matrices = np.concatenate((enemy_matrices, enemy_matrix.reshape((m_count, m_length, m_width))))
+        enemy_matrices = np.concatenate((enemy_matrices, enemy_matrix.reshape((m_count, m_columns, m_rows))))
 
         # Finally, add the labelled data
         response = client.get_object(Bucket=BUCKET_NAME, Key=folder_prefix + YLABEL_KEY)
@@ -100,11 +101,11 @@ if __name__ == '__main__':
 
     # Serialize training data locally
     data = { 'xlabels': x_data, 'ylabels': y_labels }
-    with open('{}/training_set.pkl'.format(os.path.dirname(__file__)), 'wb') as f:
+    with open('{}/training_set.pkl'.format(prefix_to_file(__file__)), 'wb') as f:
         pickle.dump(data, f)
 
     # Store training set in AWS S3 for future use / backup
-    with open('{}/training_set.pkl'.format(os.path.dirname(__file__)), 'rb') as f:
+    with open('{}/training_set.pkl'.format(prefix_to_file(__file__)), 'rb') as f:
         client.put_object(
             Bucket=BUCKET_NAME,
             Key='training_sets/training_set_{}.pkl'.format(datetime.now().strftime('%Y%m%d-%H%M')),

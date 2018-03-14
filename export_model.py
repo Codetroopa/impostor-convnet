@@ -66,7 +66,7 @@ if __name__ == "__main__":
     with open(file_path, 'rb') as f:
         client.put_object(
             Bucket=BUCKET_NAME,
-            Key='models/model_{}.pb'.format(datetime.now().strftime('%Y%m%d-%H%M')),
+            Key='models/frozen_model_{}.pb'.format(datetime.now().strftime('%Y%m%d-%H%M')),
             Body=f
         )
     print('Successfully stored model on S3')
